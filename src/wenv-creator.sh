@@ -184,6 +184,7 @@ EOF
 function _printVersion()
 {
     echo "Version $VERSION"
+    exit 1
 }
 
 function _printUsage()
@@ -346,7 +347,7 @@ export LANG=C
 
 DEBUG=0
 _debug set -x
-VERSION="1.0.1"
+VERSION="1.0.2"
 SCRIPT_URL='https://raw.githubusercontent.com/MagePsycho/warden-docker-environment-creator/main/src/wenv-creator.sh'
 SCRIPT_LOCATION="${BASH_SOURCE[@]}"
 ABS_SCRIPT_PATH=$(readlink -f "$SCRIPT_LOCATION")
