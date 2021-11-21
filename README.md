@@ -34,3 +34,8 @@ To create warden environment for `Symfony`
 ```
 wenv-creator --project=... --type=symfony
 ```
+
+To update the script
+```
+wenv-creator --update
+```
