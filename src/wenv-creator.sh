@@ -138,7 +138,21 @@ function _checkRootUser()
         echo "You have no permission to run $0 as non-root user. Use sudo"
         exit 1;
     fi
+}
 
+function _selfUpdate()
+{
+    TMP_FILE=$(mktemp -p "" "XXXXX.sh")
+    curl -s -L "$SCRIPT_URL" > "$TMP_FILE"
+    NEW_VER=$(grep "^VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+    if [[ "$VERSION" < "$NEW_VER" ]]; then
+        printf "Updating script \e[31;1m%s\e[0m -> \e[32;1m%s\e[0m\n" "$VERSION" "$NEW_VER"
+        printf "(Run command: $(basename "$0") --version to check the version)"
+        cp -f "$TMP_FILE" "$ABS_SCRIPT_PATH" || _die "Unable to update the script"
+    else
+         _arrow "Already the latest version."
+    fi
+    exit 1
 }
 
 function _printPoweredBy()
@@ -185,6 +199,8 @@ Version $VERSION
         -h,     --help             Display this help and exit
         -d,     --debug            Display this help and exit
         -v,     --version          Output version information and exit
+        -u,     --update           Self-update the script from Git repository
+                --self-update      Self-update the script from Git repository
 
     Examples:
         $(basename "$0") --project --type [--debug] [--version]  [--help]
@@ -200,6 +216,8 @@ function checkCmdDependencies()
       warden
       sed
       wget
+      curl
+      awk
     )
 
     for cmd in "${_dependencies[@]}"
@@ -230,6 +248,9 @@ function processArgs()
             ;;
             -h|--help)
                 _printUsage
+            ;;
+            -u|--update|--self-update)
+                _selfUpdate
             ;;
             *)
                 #_printUsage
@@ -326,6 +347,9 @@ export LANG=C
 DEBUG=0
 _debug set -x
 VERSION="1.0.0"
+SCRIPT_URL='https://raw.githubusercontent.com/MagePsycho/warden-docker-environment-creator/main/src/wenv-creator.sh'
+SCRIPT_LOCATION="${BASH_SOURCE[@]}"
+ABS_SCRIPT_PATH=$(readlink -f "$SCRIPT_LOCATION")
 
 INSTALL_DIR=
 APP_PROJECT=
