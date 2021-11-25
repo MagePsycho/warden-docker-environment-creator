@@ -144,11 +144,11 @@ function _selfUpdate()
 {
     TMP_FILE=$(mktemp -p "" "XXXXX.sh")
     curl -s -L "$SCRIPT_URL" > "$TMP_FILE"
-    NEW_VER=$(grep "^VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+    NEW_VER=$(awk -F'[="]' '/VERSION/ {print $3}' "$TMP_FILE")
     if [[ "$VERSION" < "$NEW_VER" ]]; then
         printf "Updating script \e[31;1m%s\e[0m -> \e[32;1m%s\e[0m\n" "$VERSION" "$NEW_VER"
         printf "(Run command: $(basename "$0") --version to check the version)"
-        cp -f "$TMP_FILE" "$ABS_SCRIPT_PATH" || _die "Unable to update the script"
+        mv "$TMP_FILE" "$ABS_SCRIPT_PATH" || _die "Unable to update the script"
     else
          _arrow "Already the latest version."
     fi
@@ -266,6 +266,12 @@ function initDefaultArgs()
 {
     INSTALL_DIR=$(pwd)
     APP_TYPE="magento2"
+    if [[ "$APP_TYPE" = "magento2" && -f ./.wenv.m2.conf ]]; then
+        source ./.wenv.m2.conf
+    fi
+    if [[ "$APP_TYPE" = "symfony" && -f ./.wenv.sf.conf ]]; then
+        source ./.wenv.sf.conf
+    fi
 }
 
 function validateArgs()
@@ -334,7 +340,7 @@ function printSuccessMessage()
     echo " >> App Type        : ${APP_TYPE}"
     echo " >> App Domain      : ${APP_DOMAIN}"
     echo " >> App Dir         : ${INSTALL_DIR}"
-    echo " (Now you can login to the shell for further processing: warden shell)"
+    echo " (Now you can login to the shell for further processing with command: ${_blue}warden shell${_reset})"
     echo "################################################################"
     _printPoweredBy
 }
