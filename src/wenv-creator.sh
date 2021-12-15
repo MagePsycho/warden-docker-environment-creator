@@ -140,15 +140,27 @@ function _checkRootUser()
     fi
 }
 
+function _semVerToInt() {
+  local _sem_ver
+  _sem_ver="${1:?No version number supplied}"
+  _sem_ver="${_sem_ver//[^0-9.]/}"
+  # shellcheck disable=SC2086
+  set -- ${_sem_ver//./ }
+  printf -- '%d%02d%02d' "${1}" "${2:-0}" "${3:-0}"
+}
+
 function _selfUpdate()
 {
     TMP_FILE=$(mktemp -p "" "XXXXX.sh")
-    curl -s -L "$SCRIPT_URL" > "$TMP_FILE"
-    NEW_VER=$(awk -F'[="]' '/VERSION/ {print $3}' "$TMP_FILE")
-    if [[ "$VERSION" < "$NEW_VER" ]]; then
+    curl -s -L "$SCRIPT_URL" > "$TMP_FILE" || _die "Couldn't download the file"
+    NEW_VER=$(awk -F'[="]' '/^VERSION=/{print $3}' "$TMP_FILE")
+    if [[ "$(_semVerToInt $VERSION)" < "$(_semVerToInt $NEW_VER)" ]]; then
         printf "Updating script \e[31;1m%s\e[0m -> \e[32;1m%s\e[0m\n" "$VERSION" "$NEW_VER"
-        printf "(Run command: $(basename "$0") --version to check the version)"
-        mv "$TMP_FILE" "$ABS_SCRIPT_PATH" || _die "Unable to update the script"
+        printf "(Run command: %s --version to check the version)" "$(basename "$0")"
+        mv -v "$TMP_FILE" "$ABS_SCRIPT_PATH" || _die "Unable to update the script"
+        # rm "$TMP_FILE" || _die "Unable to clean the temp file: $TMP_FILE"
+        # @todo make use of trap
+        # trap "rm -f $TMP_FILE" EXIT
     else
          _arrow "Already the latest version."
     fi
