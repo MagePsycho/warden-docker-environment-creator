@@ -324,22 +324,19 @@ function initDefaultArgs()
 
 function loadConfigValues()
 {
-    if [[ "$APP_TYPE" = "magento2" ]]; then
-        if [[ -f "$HOME/.warden/.wenv.m2.conf" ]]; then
-            source "$HOME/.warden/.wenv.m2.conf"
-        fi
-        if [[ -f "${INSTALL_DIR}/.wenv.m2.conf" ]]; then
-            source "${INSTALL_DIR}/.wenv.m2.conf"
-        fi
+    local _configPrefix="m2";
+    if [[ "$APP_TYPE" = "symfony" ]]; then
+         _configPrefix="sf";
     fi
 
-    if [[ "$APP_TYPE" = "symfony" ]]; then
-        if [[ -f "$HOME/.warden/.wenv.sf.conf" ]]; then
-            source "$HOME/.warden/.wenv.sf.conf"
-        fi
-        if [[ -f "${INSTALL_DIR}/.wenv.sf.conf" ]]; then
-            source "${INSTALL_DIR}/.wenv.sf.conf"
-        fi
+    # Load config if exists in ~/.warden/ folder
+    if [[ -f "$HOME/.warden/.wenv.${_configPrefix}.conf" ]]; then
+        source "$HOME/.warden/.wenv.${_configPrefix}.conf"
+    fi
+
+    # Load config if exists in ./ folder
+    if [[ -f "${INSTALL_DIR}/.wenv.${_configPrefix}.conf" ]]; then
+        source "${INSTALL_DIR}/.wenv.${_configPrefix}.conf"
     fi
 }
 
