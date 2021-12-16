@@ -400,44 +400,19 @@ function initUserInputWizard()
 
 function updateEnvFile()
 {
-    if [[ "$WARDEN_WEB_ROOT" ]]; then
-        sed -i 's@WARDEN_WEB_ROOT=\(.*\)@WARDEN_WEB_ROOT='$WARDEN_WEB_ROOT'@g' "${INSTALL_DIR}/.env"
-    fi
+    local _key;
+    local _value;
+
+    wardenVars=("WARDEN_WEB_ROOT" "TRAEFIK_SUBDOMAIN" "WARDEN_ELASTICSEARCH" "WARDEN_VARNISH" "WARDEN_RABBITMQ" "WARDEN_REDIS" "COMPOSER_VERSION" "PHP_VERSION" "PHP_XDEBUG_3")
+    for wVar in ${wardenVars[@]}; do
+        _key=$wVar
+        _value=${!wVar}
+        sed -i 's@${_key}=\(.*\)@${_key}='$_value'@g' "${INSTALL_DIR}/.env"
+    done
+
     # Create Root Dir if not exists
     if [[ ! -d "${INSTALL_DIR}${WARDEN_WEB_ROOT}" ]]; then
       mkdir "${INSTALL_DIR}${WARDEN_WEB_ROOT}"
-    fi
-
-    if [[ "TRAEFIK_SUBDOMAIN" ]]; then
-        sed -i 's@TRAEFIK_SUBDOMAIN=\(.*\)@TRAEFIK_SUBDOMAIN='$TRAEFIK_SUBDOMAIN'@g' "${INSTALL_DIR}/.env"
-    fi
-
-    if [[ "WARDEN_ELASTICSEARCH" ]]; then
-        sed -i 's@WARDEN_ELASTICSEARCH=\(.*\)@WARDEN_ELASTICSEARCH='$WARDEN_ELASTICSEARCH'@g' "${INSTALL_DIR}/.env"
-    fi
-
-    if [[ "WARDEN_VARNISH" ]]; then
-        sed -i 's@WARDEN_VARNISH=\(.*\)@WARDEN_VARNISH='$WARDEN_VARNISH'@g' "${INSTALL_DIR}/.env"
-    fi
-
-    if [[ "WARDEN_RABBITMQ" ]]; then
-        sed -i 's@WARDEN_RABBITMQ=\(.*\)@WARDEN_RABBITMQ='$WARDEN_RABBITMQ'@g' "${INSTALL_DIR}/.env"
-    fi
-
-    if [[ "WARDEN_REDIS" ]]; then
-        sed -i 's@WARDEN_REDIS=\(.*\)@WARDEN_REDIS='$WARDEN_REDIS'@g' "${INSTALL_DIR}/.env"
-    fi
-
-    if [[ "COMPOSER_VERSION" ]]; then
-        sed -i 's@COMPOSER_VERSION=\(.*\)@COMPOSER_VERSION='$COMPOSER_VERSION'@g' "${INSTALL_DIR}/.env"
-    fi
-
-    if [[ "PHP_VERSION" ]]; then
-        sed -i 's@PHP_VERSION=\(.*\)@PHP_VERSION='$PHP_VERSION'@g' "${INSTALL_DIR}/.env"
-    fi
-
-    if [[ "PHP_XDEBUG_3" ]]; then
-        sed -i 's@PHP_XDEBUG_3=\(.*\)@PHP_XDEBUG_3='$PHP_XDEBUG_3'@g' "${INSTALL_DIR}/.env"
     fi
 }
 
