@@ -89,11 +89,40 @@ function _safeExit()
 #
 # UTILITY HELPER
 #
+function _seekValue()
+{
+    MESSAGE="$1"
+    READ_DEFAULT_VALUE="$2"
+    READVALUE=
+    if [ "${READ_DEFAULT_VALUE}" ]
+    then
+        MESSAGE="${MESSAGE} (default: ${READ_DEFAULT_VALUE})"
+    fi
+    MESSAGE="${MESSAGE}: "
+    read -r -p "$MESSAGE" READVALUE
+    if [[ $READVALUE = [Nn] ]]
+    then
+        READVALUE=''
+        return
+    fi
+    if [ -z "${READVALUE}" ] && [ "${READ_DEFAULT_VALUE}" ]
+    then
+        READVALUE=${READ_DEFAULT_VALUE}
+    fi
+}
+
 function _seekConfirmation()
 {
-  printf '\n%s%s%s' "$_bold" "$@" "$_reset"
-  read -p " (y/n) " -n 1
-  printf '\n'
+    read -r -p "${_bold}${1:-Are you sure? [y/N]}${_reset} " response
+    case "$response" in
+        [yY][eE][sS]|[yY])
+            retval=0
+            ;;
+        *)
+            retval=1
+            ;;
+    esac
+    return $retval
 }
 
 # Test whether the result of an 'ask' is a confirmation
@@ -104,7 +133,6 @@ function _isConfirmed()
     fi
     return 1
 }
-
 
 function _typeExists()
 {
@@ -278,11 +306,40 @@ function initDefaultArgs()
 {
     INSTALL_DIR=$(pwd)
     APP_TYPE="magento2"
-    if [[ "$APP_TYPE" = "magento2" && -f ./.wenv.m2.conf ]]; then
-        source ./.wenv.m2.conf
+    WARDEN_WEB_ROOT="/"
+    WARDEN_ELASTICSEARCH=1
+    WARDEN_VARNISH=0
+    WARDEN_RABBITMQ=0
+    WARDEN_REDIS=1
+
+    COMPOSER_VERSION=1
+    PHP_VERSION=7.4
+    PHP_XDEBUG_3=1
+    if [[ "$APP_TYPE" = "symfony" ]]; then
+        WARDEN_WEB_ROOT="/web"
+        WARDEN_ELASTICSEARCH=0
+        WARDEN_REDIS=1
     fi
-    if [[ "$APP_TYPE" = "symfony" && -f ./.wenv.sf.conf ]]; then
-        source ./.wenv.sf.conf
+}
+
+function loadConfigValues()
+{
+    if [[ "$APP_TYPE" = "magento2" ]]; then
+        if [[ -f "$HOME/.warden/.wenv.m2.conf" ]]; then
+            source "$HOME/.warden/.wenv.m2.conf"
+        fi
+        if [[ -f "${INSTALL_DIR}/.wenv.m2.conf" ]]; then
+            source "${INSTALL_DIR}/.wenv.m2.conf"
+        fi
+    fi
+
+    if [[ "$APP_TYPE" = "symfony" ]]; then
+        if [[ -f "$HOME/.warden/.wenv.sf.conf" ]]; then
+            source "$HOME/.warden/.wenv.sf.conf"
+        fi
+        if [[ -f "${INSTALL_DIR}/.wenv.sf.conf" ]]; then
+            source "${INSTALL_DIR}/.wenv.sf.conf"
+        fi
     fi
 }
 
@@ -314,6 +371,79 @@ function createEtcHostEntry()
     fi
 }
 
+function initUserInputWizard()
+{
+    _seekValue "Enter Web Root:" "${WARDEN_WEB_ROOT}"
+    WARDEN_WEB_ROOT=${READVALUE}
+
+    _seekValue "Enter Sub Domain:" "${TRAEFIK_SUBDOMAIN}"
+    TRAEFIK_SUBDOMAIN=${READVALUE}
+
+    _seekValue "Use Elasticsearch?" "${WARDEN_ELASTICSEARCH}"
+    WARDEN_ELASTICSEARCH=${READVALUE}
+
+    _seekValue "Use Varnish?" "${WARDEN_VARNISH}"
+    WARDEN_VARNISH=${READVALUE}
+
+    _seekValue "Use RabbitMQ?" "${WARDEN_RABBITMQ}"
+    WARDEN_RABBITMQ=${READVALUE}
+
+    _seekValue "Use Redis?" "${WARDEN_REDIS}"
+    WARDEN_REDIS=${READVALUE}
+
+    _seekValue "Enter Composer Version:" "${COMPOSER_VERSION}"
+    COMPOSER_VERSION=${READVALUE}
+
+    _seekValue "Enter PHP Version:" "${PHP_VERSION}"
+    PHP_VERSION=${READVALUE}
+
+    _seekValue "Use XDebug 3?" "${PHP_XDEBUG_3}"
+    PHP_XDEBUG_3=${READVALUE}
+}
+
+function updateEnvFile()
+{
+    if [[ "$WARDEN_WEB_ROOT" ]]; then
+        sed -i 's@WARDEN_WEB_ROOT=\(.*\)@WARDEN_WEB_ROOT='$WARDEN_WEB_ROOT'@g' "${INSTALL_DIR}/.env"
+    fi
+    # Create Root Dir if not exists
+    if [[ ! -d "${INSTALL_DIR}${WARDEN_WEB_ROOT}" ]]; then
+      mkdir "${INSTALL_DIR}${WARDEN_WEB_ROOT}"
+    fi
+
+    if [[ "TRAEFIK_SUBDOMAIN" ]]; then
+        sed -i 's@TRAEFIK_SUBDOMAIN=\(.*\)@TRAEFIK_SUBDOMAIN='$TRAEFIK_SUBDOMAIN'@g' "${INSTALL_DIR}/.env"
+    fi
+
+    if [[ "WARDEN_ELASTICSEARCH" ]]; then
+        sed -i 's@WARDEN_ELASTICSEARCH=\(.*\)@WARDEN_ELASTICSEARCH='$WARDEN_ELASTICSEARCH'@g' "${INSTALL_DIR}/.env"
+    fi
+
+    if [[ "WARDEN_VARNISH" ]]; then
+        sed -i 's@WARDEN_VARNISH=\(.*\)@WARDEN_VARNISH='$WARDEN_VARNISH'@g' "${INSTALL_DIR}/.env"
+    fi
+
+    if [[ "WARDEN_RABBITMQ" ]]; then
+        sed -i 's@WARDEN_RABBITMQ=\(.*\)@WARDEN_RABBITMQ='$WARDEN_RABBITMQ'@g' "${INSTALL_DIR}/.env"
+    fi
+
+    if [[ "WARDEN_REDIS" ]]; then
+        sed -i 's@WARDEN_REDIS=\(.*\)@WARDEN_REDIS='$WARDEN_REDIS'@g' "${INSTALL_DIR}/.env"
+    fi
+
+    if [[ "COMPOSER_VERSION" ]]; then
+        sed -i 's@COMPOSER_VERSION=\(.*\)@COMPOSER_VERSION='$COMPOSER_VERSION'@g' "${INSTALL_DIR}/.env"
+    fi
+
+    if [[ "PHP_VERSION" ]]; then
+        sed -i 's@PHP_VERSION=\(.*\)@PHP_VERSION='$PHP_VERSION'@g' "${INSTALL_DIR}/.env"
+    fi
+
+    if [[ "PHP_XDEBUG_3" ]]; then
+        sed -i 's@PHP_XDEBUG_3=\(.*\)@PHP_XDEBUG_3='$PHP_XDEBUG_3'@g' "${INSTALL_DIR}/.env"
+    fi
+}
+
 function createWardenEnv()
 {
     _arrow "Warden env creation started..."
@@ -324,18 +454,18 @@ function createWardenEnv()
     _success "Done"
 
     _arrow "Configuring the environment variables..."
-    local _webRoot=$(grep WARDEN_WEB_ROOT "${INSTALL_DIR}/.env" | cut -d '=' -f2)
-    if [[ "$_webRoot" != "/web" ]]; then
-      sed -i 's/WARDEN_WEB_ROOT=\//WARDEN_WEB_ROOT=\/web/g' "${INSTALL_DIR}/.env"
-    fi
-    if [[ ! -d "${INSTALL_DIR}/web" ]]; then
-      mkdir web
-    fi
+
+    initUserInputWizard
+
+    _arrow "Updating the configuration..."
+    updateEnvFile
     _success "Done"
 
+    _arrow "Initializing the warden environment..."
     warden env up
+    _success "Done"
 
-    # Not sure why /etc/hosts needs to configured manually for Ubuntu
+    # @todo Not sure why /etc/hosts needs to configured manually for Ubuntu
     if _isOsDebian ; then
        _arrow "Creating an entry to /etc/hosts file..."
        createEtcHostEntry
@@ -383,6 +513,8 @@ function main()
     [[ $# -lt 1 ]] && _printUsage
 
     initDefaultArgs
+    loadConfigValues
+
     processArgs "$@"
 
     createWardenEnv
