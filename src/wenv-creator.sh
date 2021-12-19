@@ -91,23 +91,28 @@ function _safeExit()
 #
 function _seekValue()
 {
-    MESSAGE="$1"
-    READ_DEFAULT_VALUE="$2"
+    local _msg="${_green}$1${_reset}"
+    local _readDefaultValue="$2"
     READVALUE=
-    if [ "${READ_DEFAULT_VALUE}" ]
-    then
-        MESSAGE="${MESSAGE} (default: ${READ_DEFAULT_VALUE})"
+    if [[ "${_readDefaultValue}" ]]; then
+        _msg="${_msg} (default: ${_blue}${_readDefaultValue}${_reset})"
+    else
+        _msg="${_msg} (default: )"
     fi
-    MESSAGE="${MESSAGE}: "
-    read -r -p "$MESSAGE" READVALUE
-    if [[ $READVALUE = [Nn] ]]
-    then
+
+    printf "$_msg\n➜ "
+    read READVALUE
+
+    # Inline input
+    #_msg="${_msg}: "
+    #read -r -p "$_msg" READVALUE
+
+    if [[ $READVALUE = [Nn] ]]; then
         READVALUE=''
         return
     fi
-    if [ -z "${READVALUE}" ] && [ "${READ_DEFAULT_VALUE}" ]
-    then
-        READVALUE=${READ_DEFAULT_VALUE}
+    if [[ -z "${READVALUE}" ]] && [[ "${_readDefaultValue}" ]]; then
+        READVALUE=${_readDefaultValue}
     fi
 }
 
@@ -179,16 +184,16 @@ function _semVerToInt() {
 
 function _selfUpdate()
 {
-    TMP_FILE=$(mktemp -p "" "XXXXX.sh")
-    curl -s -L "$SCRIPT_URL" > "$TMP_FILE" || _die "Couldn't download the file"
-    NEW_VER=$(awk -F'[="]' '/^VERSION=/{print $3}' "$TMP_FILE")
-    if [[ "$(_semVerToInt $VERSION)" < "$(_semVerToInt $NEW_VER)" ]]; then
-        printf "Updating script \e[31;1m%s\e[0m -> \e[32;1m%s\e[0m\n" "$VERSION" "$NEW_VER"
+    local _tmpFile=$(mktemp -p "" "XXXXX.sh")
+    curl -s -L "$SCRIPT_URL" > "$_tmpFile" || _die "Couldn't download the file"
+    local _newVersion=$(awk -F'[="]' '/^VERSION=/{print $3}' "$_tmpFile")
+    if [[ "$(_semVerToInt $VERSION)" < "$(_semVerToInt $_newVersion)" ]]; then
+        printf "Updating script \e[31;1m%s\e[0m -> \e[32;1m%s\e[0m\n" "$VERSION" "$_newVersion"
         printf "(Run command: %s --version to check the version)" "$(basename "$0")"
-        mv -v "$TMP_FILE" "$ABS_SCRIPT_PATH" || _die "Unable to update the script"
-        # rm "$TMP_FILE" || _die "Unable to clean the temp file: $TMP_FILE"
+        mv -v "$_tmpFile" "$ABS_SCRIPT_PATH" || _die "Unable to update the script"
+        # rm "$_tmpFile" || _die "Unable to clean the temp file: $_tmpFile"
         # @todo make use of trap
-        # trap "rm -f $TMP_FILE" EXIT
+        # trap "rm -f $_tmpFile" EXIT
     else
          _arrow "Already the latest version."
     fi
@@ -370,6 +375,8 @@ function createEtcHostEntry()
 
 function initUserInputWizard()
 {
+    _note "Press [enter] if you want to use the default value."
+
     _seekValue "Enter Web Root:" "${WARDEN_WEB_ROOT}"
     WARDEN_WEB_ROOT=${READVALUE}
 
