@@ -20,11 +20,13 @@ _bold=$(tput bold)
 _underline=$(tput sgr 0 1)
 _reset=$(tput sgr0)
 
+_black=$(tput setaf 0)
 _purple=$(tput setaf 171)
 _red=$(tput setaf 1)
 _green=$(tput setaf 76)
 _tan=$(tput setaf 3)
 _blue=$(tput setaf 38)
+_white=$(tput setaf 7)
 
 #
 # HEADERS & LOGGING
@@ -95,11 +97,12 @@ function _seekValue()
     local _readDefaultValue="$2"
     READVALUE=
     if [[ "${_readDefaultValue}" ]]; then
-        _msg="${_msg} (default: ${_blue}${_readDefaultValue}${_reset})"
+        _msg="${_msg} ${_white}[${_reset}${_green}${_readDefaultValue}${_reset}${_white}]${_reset}"
     else
-        _msg="${_msg} (default: )"
+        _msg="${_msg} ${_white}[${_reset} ${_white}]${_reset}"
     fi
 
+    _msg="${_msg}: "
     printf "$_msg\n➜ "
     read READVALUE
 
@@ -377,31 +380,31 @@ function initUserInputWizard()
 {
     _note "Press [enter] if you want to use the default value."
 
-    _seekValue "Enter Web Root:" "${WARDEN_WEB_ROOT}"
+    _seekValue "Enter Web Root" "${WARDEN_WEB_ROOT}"
     WARDEN_WEB_ROOT=${READVALUE}
 
-    _seekValue "Enter Sub Domain:" "${TRAEFIK_SUBDOMAIN}"
+    _seekValue "Enter Sub Domain" "${TRAEFIK_SUBDOMAIN}"
     TRAEFIK_SUBDOMAIN=${READVALUE}
 
-    _seekValue "Use Elasticsearch?" "${WARDEN_ELASTICSEARCH}"
+    _seekValue "Use Elasticsearch" "${WARDEN_ELASTICSEARCH}"
     WARDEN_ELASTICSEARCH=${READVALUE}
 
-    _seekValue "Use Varnish?" "${WARDEN_VARNISH}"
+    _seekValue "Use Varnish" "${WARDEN_VARNISH}"
     WARDEN_VARNISH=${READVALUE}
 
-    _seekValue "Use RabbitMQ?" "${WARDEN_RABBITMQ}"
+    _seekValue "Use RabbitMQ" "${WARDEN_RABBITMQ}"
     WARDEN_RABBITMQ=${READVALUE}
 
-    _seekValue "Use Redis?" "${WARDEN_REDIS}"
+    _seekValue "Use Redis" "${WARDEN_REDIS}"
     WARDEN_REDIS=${READVALUE}
 
-    _seekValue "Enter Composer Version:" "${COMPOSER_VERSION}"
+    _seekValue "Enter Composer Version" "${COMPOSER_VERSION}"
     COMPOSER_VERSION=${READVALUE}
 
-    _seekValue "Enter PHP Version:" "${PHP_VERSION}"
+    _seekValue "Enter PHP Version" "${PHP_VERSION}"
     PHP_VERSION=${READVALUE}
 
-    _seekValue "Use XDebug 3?" "${PHP_XDEBUG_3}"
+    _seekValue "Use XDebug 3" "${PHP_XDEBUG_3}"
     PHP_XDEBUG_3=${READVALUE}
 }
 
