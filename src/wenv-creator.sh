@@ -283,7 +283,6 @@ function processArgs()
         case $arg in
             -p|--project=*)
                 APP_PROJECT="${arg#*=}"
-                APP_DOMAIN="app.${APP_PROJECT}.test"
             ;;
             -t|--type=*)
                 APP_TYPE="${arg#*=}"
@@ -319,6 +318,7 @@ function initDefaultArgs()
     WARDEN_VARNISH=0
     WARDEN_RABBITMQ=0
     WARDEN_REDIS=1
+    TRAEFIK_SUBDOMAIN="app"
 
     COMPOSER_VERSION=1
     PHP_VERSION=7.4
@@ -369,7 +369,8 @@ function validateArgs()
 function createEtcHostEntry()
 {
     local _etcHostLine="127.0.0.1  ${APP_DOMAIN}"
-    if grep -Eq "127.0.0.1[[:space:]]+${APP_DOMAIN}" /etc/hosts; then
+    if grep -ll
+    Eq "127.0.0.1[[:space:]]+${APP_DOMAIN}" /etc/hosts; then
         _warning "Entry ${_etcHostLine} already exists in host file"
     else
         echo "127.0.0.1 ${APP_DOMAIN}" | sudo tee -a /etc/hosts || _die "Unable to write host to /etc/hosts"
@@ -438,6 +439,12 @@ function createWardenEnv()
     _arrow "Configuring the environment variables..."
 
     initUserInputWizard
+
+    if [[ "$TRAEFIK_SUBDOMAIN" ]]; then
+        APP_DOMAIN="${TRAEFIK_SUBDOMAIN}.${APP_PROJECT}.test"
+    else
+        APP_DOMAIN="${APP_PROJECT}.test"
+    fi
 
     _arrow "Updating the configuration..."
     updateEnvFile

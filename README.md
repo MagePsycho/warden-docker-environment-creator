@@ -37,5 +37,5 @@ wenv-creator --project=... --type=symfony
 
 To update the script
 ```
-wenv-creator --update
+wenv-creator --self-update
 ```
